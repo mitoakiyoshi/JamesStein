@@ -8,7 +8,7 @@
 #
 # invoke_map() was deprecated. So I rewrote part of the code with map2()
 #
-# Created April 11, 20222
+# Created April 11, 2022
 # Revised March 17, 2025
 # Revised May 1, 2025
 # Mito Akiyoshi
