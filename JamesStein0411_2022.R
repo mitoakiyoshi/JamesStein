@@ -192,6 +192,68 @@ sim_rep %>%
 
 #4.1
 set.seed(42)
+mu <- list(5,10,0)
+mu %>% 
+  map(rnorm,n=5) %>% 
+  str()
+
+library(Lahman)
+set.seed(42)
+
+#1
+
+players <- Batting %>% 
+  group_by(playerID) %>% 
+  summarise(AB_total = sum(AB), 
+            H_total = sum(H)) %>% 
+  na.omit() %>% 
+  filter(H_total>500) %>%  
+  sample_n(size=30) %>%    
+  pull(playerID)
+
+#2
+TRUTH <- Batting %>% 
+  filter(playerID %in% players) %>% 
+  group_by(playerID) %>% 
+  summarise(AB_total = sum(AB), 
+            H_total = sum(H)) %>% 
+  mutate(TRUTH = H_total/AB_total) %>% 
+  select(playerID,TRUTH)
+
+#3
+#4
+
+set.seed(42)
+obs <- Batting %>% 
+  filter(playerID %in% players) %>% 
+  group_by(playerID) %>%
+  do(sample_n(., 5))  %>%       
+  group_by(playerID) %>% 
+  summarise(AB_total = sum(AB), 
+            H_total = sum(H)) %>% 
+  mutate(MLE = H_total/AB_total) %>% 
+  select(playerID,MLE,AB_total) %>% 
+  inner_join(TRUTH,by="playerID")
+
+p_=mean(obs$MLE)
+N = length(obs$MLE)
+obs %>% summarise(median(AB_total))
+
+df <- obs %>% 
+  mutate(sigma2 = (p_*(1-p_))/1624.5,
+         JS=p_+(1-((N-3)*sigma2/(sum((MLE-p_)^2))))*(MLE-p_)) %>% 
+  select(-AB_total,-sigma2)
+
+head(df)
+
+errors <- df %>% 
+  mutate(mle_pred_error_i = (MLE-TRUTH)^2,
+         js_pred_error_i = (JS-TRUTH)^2) %>% 
+  summarise(js_pred_error = sum(js_pred_error_i),
+            mle_pred_error = sum(mle_pred_error_i))
+
+
+set.seed(42)
 sim <- tibble(player = letters, 
               AB_total=300, 
               TRUTH = rbeta(100,300,n=26),
@@ -230,6 +292,13 @@ bats_sim %>%
   labs(title="The James-Stein Estimator Shrinks the MLE")+
   theme_minimal()
 
+errors <- bats_sim %>% 
+  mutate(mle_pred_error_i = (MLE-TRUTH)^2,
+         js_pred_error_i = (JS-TRUTH)^2) %>% 
+  summarise(js_pred_error = sum(js_pred_error_i),
+            mle_pred_error = sum(mle_pred_error_i))
+errors
+
 # color=FALSE is changed to color=none" b/c FALSE gives a warning
 
 ### Practice functions]
@@ -244,6 +313,25 @@ my_function <- function(num, str){
 }
 result <- pmap(combined, my_function)
 print(result)
+
+# Load the purrr package
+library(purrr)
+
+# Create lists
+numbers <- list(1, 2, 3)
+strings <- list("a", "b", "c")
+
+# Define the function
+my_function <- function(num, str){
+  paste0(num, str)
+}
+
+# Use map2 to apply the function element-wise
+result <- map2(numbers, strings, my_function)
+
+# Print the result
+print(result)
+
 
 ### practice map2 
 
